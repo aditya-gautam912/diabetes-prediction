@@ -1,5 +1,8 @@
 # Diabetes Prediction Using Machine Learning 🩺
 
+**▶ [Live demo](https://diabetes-prediction-gh7vmdsdp9wrpxd6e4vudv.streamlit.app/)** ·
+[GitHub repo](https://github.com/aditya-gautam912/diabetes-prediction)
+
 A machine-learning web app that predicts the likelihood of diabetes from clinical
 measurements, built on the classic **Pima Indians Diabetes dataset**.
 
@@ -9,6 +12,9 @@ get an instant risk probability plus a full performance view (ROC curve, confusi
 matrix, feature importance).
 
 ## Demo
+
+Try the **[live app](https://diabetes-prediction-gh7vmdsdp9wrpxd6e4vudv.streamlit.app/)**
+(no setup needed), or run it locally:
 
 ```bash
 pip install -r requirements.txt
