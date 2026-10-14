@@ -66,25 +66,69 @@ PRESETS = {
 
 st.set_page_config(page_title="Diabetes Risk Predictor", page_icon="🩺", layout="wide")
 
-CUSTOM_CSS = """
-<style>
-  .app-header { font-size: 2.1rem; font-weight: 800; margin-bottom: 0; letter-spacing: -0.5px; }
-  .app-header .accent { color: #0d6efd; }
-  .app-tagline { color: #6c757d; font-size: 0.95rem; margin-top: 0.1rem; margin-bottom: 0.4rem; }
-  .group-title { font-size: 1.05rem; font-weight: 700; color: #0d6efd;
-                 border-left: 4px solid #0d6efd; padding-left: 8px; margin: 4px 0 2px; }
-  .riskbar { position: relative; height: 16px; border-radius: 8px; margin: 10px 0 4px;
-             background: linear-gradient(to right, #2e7d32 0%, #2e7d32 30%, #f9a825 30%, #f9a825 70%, #c62828 70%, #c62828 100%); }
-  .riskbar .marker { position: absolute; top: -5px; width: 5px; height: 26px; background: #111;
-                     border-radius: 3px; transform: translateX(-50%); box-shadow: 0 0 5px rgba(0,0,0,.55); }
-  .risklabels { display: flex; justify-content: space-between; color: #6c757d; font-size: 0.8rem; margin-bottom: 8px; }
-  .big-pct { font-size: 2.6rem; font-weight: 800; line-height: 1; }
-</style>
-"""
+# Color palettes for Day (light) and Night (dark) modes.
+THEMES = {
+    "light": {
+        "bg": "#ffffff", "bg2": "#f0f2f6", "text": "#262730", "muted": "#6c757d",
+        "card": "#ffffff", "border": "#e6e9ef", "accent": "#0d6efd", "marker": "#111111",
+    },
+    "dark": {
+        "bg": "#0e1117", "bg2": "#161b22", "text": "#e6eaf0", "muted": "#9aa4b2",
+        "card": "#161b22", "border": "#2a3038", "accent": "#4c9aff", "marker": "#ffffff",
+    },
+}
 
 
-def inject_css():
-    st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
+def build_css(t: dict) -> str:
+    return f"""
+    <style>
+      /* ---- App surfaces ---- */
+      .stApp, [data-testid="stAppViewContainer"], [data-testid="stHeader"],
+      [data-testid="stToolbar"] {{ background-color: {t['bg']}; color: {t['text']}; }}
+      :root, .stApp {{
+        --background-color: {t['bg']};
+        --secondary-background-color: {t['bg2']};
+        --text-color: {t['text']};
+        --primary-color: {t['accent']};
+      }}
+      .main .block-container {{ background-color: {t['bg']}; color: {t['text']}; }}
+      [data-testid="stSidebar"], [data-testid="stSidebarContent"] {{ background-color: {t['bg2']}; }}
+      [data-testid="stSidebar"] * {{ color: {t['text']}; }}
+
+      /* Text */
+      h1, h2, h3, h4, p, li, label, .stMarkdown, [data-testid="stMarkdown"] p {{ color: {t['text']}; }}
+      hr {{ border-color: {t['border']}; }}
+
+      /* Custom header + sections */
+      .app-header {{ font-size: 2.1rem; font-weight: 800; margin-bottom: 0; letter-spacing: -0.5px; color: {t['text']}; }}
+      .app-header .accent {{ color: {t['accent']}; }}
+      .app-tagline {{ color: {t['muted']}; font-size: 0.95rem; margin-top: 0.1rem; margin-bottom: 0.4rem; }}
+      .group-title {{ font-size: 1.05rem; font-weight: 700; color: {t['accent']};
+                      border-left: 4px solid {t['accent']}; padding-left: 8px; margin: 4px 0 2px; }}
+      .riskbar {{ position: relative; height: 16px; border-radius: 8px; margin: 10px 0 4px;
+                  background: linear-gradient(to right, #2e7d32 0%, #2e7d32 30%, #f9a825 30%, #f9a825 70%, #c62828 70%, #c62828 100%); }}
+      .riskbar .marker {{ position: absolute; top: -5px; width: 5px; height: 26px; background: {t['marker']};
+                          border-radius: 3px; transform: translateX(-50%); box-shadow: 0 0 5px rgba(0,0,0,.55); }}
+      .risklabels {{ display: flex; justify-content: space-between; color: {t['muted']}; font-size: 0.8rem; margin-bottom: 8px; }}
+      .big-pct {{ font-size: 2.6rem; font-weight: 800; line-height: 1; }}
+
+      /* Widgets */
+      [data-testid="stButton"] > button {{ background-color: {t['card']}; color: {t['text']}; border: 1px solid {t['border']}; }}
+      [data-testid="stButton"] > button:hover {{ border-color: {t['accent']}; color: {t['accent']}; }}
+      [data-testid="stButton"] > button[kind="primary"] {{ background-color: {t['accent']}; color: #ffffff; border: none; }}
+      [data-testid="stMetric"] {{ background-color: {t['card']}; border: 1px solid {t['border']}; padding: 10px; border-radius: 10px; }}
+      [data-testid="stMetricValue"], [data-testid="stMetricLabel"], [data-testid="stMetricDelta"] {{ color: {t['text']}; }}
+      [data-testid="stExpander"] details {{ background-color: {t['card']}; border: 1px solid {t['border']}; border-radius: 10px; }}
+      [data-testid="stExpander"] summary {{ color: {t['text']}; }}
+      [data-testid="stAlert"] {{ background-color: {t['card']}; }}
+      [data-testid="stRadio"] label, [data-testid="stRadio"] * {{ color: {t['text']}; }}
+      [data-testid="stDataFrame"] iframe {{ background-color: {t['card']}; }}
+    </style>
+    """
+
+
+def inject_css(theme: str):
+    st.markdown(build_css(THEMES[theme]), unsafe_allow_html=True)
 
 
 @st.cache_resource
@@ -108,7 +152,16 @@ def risk_zone(p: float):
 
 
 def main():
-    inject_css()
+    # Day / Night toggle (sidebar)
+    with st.sidebar:
+        st.markdown("### Appearance")
+        choice = st.radio(
+            "Theme", ["☀️ Day", "🌙 Night"], horizontal=True,
+            label_visibility="collapsed", key="theme_choice",
+        )
+    theme = "dark" if choice == "🌙 Night" else "light"
+
+    inject_css(theme)
     model, metrics = load_artifacts()
 
     st.markdown('<div class="app-header">🩺 Diabetes <span class="accent">Risk Predictor</span></div>',
