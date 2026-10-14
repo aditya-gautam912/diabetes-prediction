@@ -87,10 +87,14 @@ def render_predict(model, metrics):
     cols = st.columns(2)
     for i, feat in enumerate(FEATURES):
         lo, hi, step, help_text = INPUT_SPECS[feat]
+        # Midpoint default must match the min/max type (int sliders reject floats).
+        mid = (lo + hi) / 2
+        if isinstance(lo, int) and isinstance(hi, int):
+            mid = int(round(mid))
         with cols[i % 2]:
-            inputs[feat] = st.slider(feat, lo, hi, (lo + hi) / 2, step, help=help_text)
+            inputs[feat] = st.slider(feat, lo, hi, mid, step, help=help_text)
 
-    if st.button("Predict", type="primary", use_container_width=True):
+    if st.button("Predict", type="primary", width="stretch"):
         row = pd.DataFrame([[inputs[f] for f in FEATURES]], columns=FEATURES)
         proba = float(model.predict_proba(row)[0, 1])
         pred = int(proba >= 0.5)
@@ -106,7 +110,7 @@ def render_predict(model, metrics):
             st.progress(proba)
         with right:
             st.markdown("**Input summary**")
-            st.dataframe(row.T.rename(columns={0: "value"}), use_container_width=True)
+            st.dataframe(row.T.rename(columns={0: "value"}), width="stretch")
 
         with st.expander("How confident is the model?"):
             st.write(
@@ -131,7 +135,7 @@ def render_performance(metrics):
     ]
     st.dataframe(df.style.format({"accuracy": "{:.3f}", "precision": "{:.3f}",
                                   "recall": "{:.3f}", "f1": "{:.3f}", "roc_auc": "{:.3f}"}),
-                 use_container_width=True)
+                 width="stretch")
 
     st.info(f"🏆 Best model by ROC-AUC: **{metrics['best_model']}** "
             f"(ROC-AUC {metrics['best_roc_auc']:.3f})")
@@ -147,7 +151,7 @@ def render_performance(metrics):
         index=["Actual: No", "Actual: Yes"],
         columns=["Predicted: No", "Predicted: Yes"],
     )
-    st.dataframe(cm, use_container_width=True)
+    st.dataframe(cm, width="stretch")
 
 
 def render_about():
