@@ -1,9 +1,10 @@
 """
 Diabetes Prediction Using Machine Learning - Streamlit App
 ==========================================================
-Interactive web app that loads the trained Gradient Boosting model and lets a
-user enter patient measurements to get a diabetes risk prediction, plus a view
-of model performance on the Pima Indians Diabetes dataset.
+Interactive web app that loads the tuned model and lets a user enter patient
+measurements to get a diabetes risk prediction, plus a view of model performance
+(CV metrics, ROC curve, confusion matrix, feature importance) on the Pima
+Indians Diabetes dataset.
 
 Run:
     streamlit run app.py
@@ -19,6 +20,8 @@ import streamlit as st
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.path.join(BASE_DIR, "models", "best_model.joblib")
 METRICS_PATH = os.path.join(BASE_DIR, "models", "metrics.json")
+ROC_PATH = os.path.join(BASE_DIR, "models", "roc_curve.png")
+CM_PATH = os.path.join(BASE_DIR, "models", "confusion_matrix.png")
 
 FEATURES = [
     "Pregnancies",
@@ -112,46 +115,84 @@ def render_predict(model, metrics):
             st.markdown("**Input summary**")
             st.dataframe(row.T.rename(columns={0: "value"}), width="stretch")
 
-        with st.expander("How confident is the model?"):
+        tuned = metrics.get("tuned_test_metrics", {})
+        with st.expander("How reliable is this model?"):
             st.write(
-                f"The best model (**{metrics['best_model']}**) achieved a ROC-AUC of "
-                f"**{metrics['best_roc_auc']:.3f}** on a held-out test set. "
+                f"The tuned **{metrics['best_model']}** achieved a cross-validated "
+                f"ROC-AUC of **{metrics['best_cv_roc_auc']:.3f}** (5-fold) and, on a "
+                f"held-out test set, ROC-AUC **{tuned.get('roc_auc', 0):.3f}** / "
+                f"PR-AUC **{tuned.get('pr_auc', 0):.3f}**. "
                 "A probability above 50% is classified as diabetic; adjust your "
                 "inputs to see how risk changes."
             )
 
 
 def render_performance(metrics):
-    st.subheader("Model comparison")
+    st.subheader("Model comparison (5-fold stratified cross-validation)")
     st.write(
         f"Trained on **{metrics['dataset_rows']}** patient records "
         f"(~{metrics['positive_rate']:.0%} diabetic). All models share the same "
-        "preprocessing: median imputation for missing clinical values, then "
-        "standard scaling."
+        "preprocessing: median imputation for missing clinical values, then standard "
+        "scaling. Trees/linear models use balanced class weights to counter the "
+        "imbalance; **PR-AUC** is reported because it is more informative than "
+        "ROC-AUC under class imbalance."
     )
 
-    df = pd.DataFrame(metrics["models"])[
-        ["model", "accuracy", "precision", "recall", "f1", "roc_auc"]
-    ]
-    st.dataframe(df.style.format({"accuracy": "{:.3f}", "precision": "{:.3f}",
-                                  "recall": "{:.3f}", "f1": "{:.3f}", "roc_auc": "{:.3f}"}),
-                 width="stretch")
-
-    st.info(f"🏆 Best model by ROC-AUC: **{metrics['best_model']}** "
-            f"(ROC-AUC {metrics['best_roc_auc']:.3f})")
-
-    # Bar chart of ROC-AUC per model.
-    chart_df = df.set_index("model")[["roc_auc"]]
-    st.bar_chart(chart_df)
-
-    st.subheader("Confusion matrix of the best model")
-    best = metrics["models"][0]
-    cm = pd.DataFrame(
-        best["confusion_matrix"],
-        index=["Actual: No", "Actual: Yes"],
-        columns=["Predicted: No", "Predicted: Yes"],
+    df = pd.DataFrame(metrics["models"])
+    df["cv_roc_auc"] = df.apply(
+        lambda r: f"{r['cv_roc_auc_mean']:.3f} ± {r['cv_roc_auc_std']:.3f}", axis=1
     )
-    st.dataframe(cm, width="stretch")
+    show = df[
+        ["model", "cv_roc_auc", "cv_accuracy_mean", "pr_auc", "roc_auc", "f1"]
+    ].rename(
+        columns={
+            "cv_accuracy_mean": "cv_accuracy",
+            "roc_auc": "test_roc_auc",
+            "f1": "test_f1",
+        }
+    )
+    st.dataframe(
+        show.style.format(
+            {"cv_accuracy_mean": "{:.3f}", "cv_accuracy": "{:.3f}",
+             "pr_auc": "{:.3f}", "test_roc_auc": "{:.3f}", "test_f1": "{:.3f}"}
+        ),
+        width="stretch",
+    )
+
+    tuned = metrics.get("tuned_test_metrics", {})
+    st.info(
+        f"🏆 Best model: **{metrics['best_model']}** — tuned params "
+        f"`{metrics.get('best_params', {})}`. "
+        f"CV ROC-AUC **{metrics['best_cv_roc_auc']:.3f}**."
+    )
+
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Test accuracy", f"{tuned.get('accuracy', 0):.3f}")
+    c2.metric("Test ROC-AUC", f"{tuned.get('roc_auc', 0):.3f}")
+    c3.metric("Test PR-AUC", f"{tuned.get('pr_auc', 0):.3f}")
+    c4.metric("Test F1", f"{tuned.get('f1', 0):.3f}")
+
+    st.subheader("Feature importance")
+    fi = metrics.get("feature_importances", {})
+    if fi:
+        fi_sorted = dict(sorted(fi.items(), key=lambda kv: kv[1], reverse=True))
+        st.bar_chart(pd.Series(fi_sorted))
+        st.caption(
+            "Absolute model weight per feature (coefficients for linear models, "
+            "impurity-based importance for trees)."
+        )
+    else:
+        st.caption("Feature importances not available for this model.")
+
+    left, right = st.columns(2)
+    with left:
+        st.subheader("ROC curve")
+        if os.path.exists(ROC_PATH):
+            st.image(ROC_PATH, width="stretch")
+    with right:
+        st.subheader("Confusion matrix")
+        if os.path.exists(CM_PATH):
+            st.image(CM_PATH, width="stretch")
 
 
 def render_about():
@@ -167,8 +208,13 @@ This project builds a binary classifier for the
 **Pipeline**
 1. Treat `0` as *missing* in clinical columns (Glucose, BloodPressure, SkinThickness, Insulin, BMI).
 2. Median imputation + standard scaling.
-3. Train 4 classifiers (Logistic Regression, Random Forest, Gradient Boosting, KNN).
-4. Select the best by ROC-AUC and save it as a reusable `sklearn` pipeline.
+3. Train 4 classifiers (Logistic Regression, Random Forest, Gradient Boosting, KNN)
+   with **5-fold stratified cross-validation**.
+4. **Tune** the best model family with `GridSearchCV`.
+5. Select by cross-validated ROC-AUC and save a reusable `sklearn` pipeline.
+
+**Metrics** include accuracy, precision, recall, F1, ROC-AUC and **PR-AUC** (the
+latter being more informative for the imbalanced, medical-imbalanced setting).
 
 **Tech stack:** Python, scikit-learn, pandas, Streamlit.
 

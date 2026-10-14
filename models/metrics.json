@@ -1,7 +1,36 @@
 {
-  "best_model": "Gradient Boosting",
-  "best_roc_auc": 0.832,
+  "best_model": "Logistic Regression (tuned)",
+  "best_params": {
+    "classifier__C": 10.0
+  },
+  "best_cv_roc_auc": 0.8438,
   "models": [
+    {
+      "model": "Logistic Regression",
+      "accuracy": 0.7338,
+      "precision": 0.6032,
+      "recall": 0.7037,
+      "f1": 0.6496,
+      "roc_auc": 0.8122,
+      "pr_auc": 0.6714,
+      "cv_roc_auc_mean": 0.836,
+      "cv_roc_auc_std": 0.0206,
+      "cv_accuracy_mean": 0.7473,
+      "cv_accuracy_std": 0.0424
+    },
+    {
+      "model": "Random Forest",
+      "accuracy": 0.7273,
+      "precision": 0.6,
+      "recall": 0.6667,
+      "f1": 0.6316,
+      "roc_auc": 0.8179,
+      "pr_auc": 0.6932,
+      "cv_roc_auc_mean": 0.8304,
+      "cv_roc_auc_std": 0.0197,
+      "cv_accuracy_mean": 0.7552,
+      "cv_accuracy_std": 0.0278
+    },
     {
       "model": "Gradient Boosting",
       "accuracy": 0.7792,
@@ -9,52 +38,11 @@
       "recall": 0.6111,
       "f1": 0.66,
       "roc_auc": 0.832,
-      "confusion_matrix": [
-        [
-          87,
-          13
-        ],
-        [
-          21,
-          33
-        ]
-      ]
-    },
-    {
-      "model": "Logistic Regression",
-      "accuracy": 0.6948,
-      "precision": 0.5745,
-      "recall": 0.5,
-      "f1": 0.5347,
-      "roc_auc": 0.8124,
-      "confusion_matrix": [
-        [
-          80,
-          20
-        ],
-        [
-          27,
-          27
-        ]
-      ]
-    },
-    {
-      "model": "Random Forest",
-      "accuracy": 0.7338,
-      "precision": 0.6383,
-      "recall": 0.5556,
-      "f1": 0.5941,
-      "roc_auc": 0.8104,
-      "confusion_matrix": [
-        [
-          83,
-          17
-        ],
-        [
-          24,
-          30
-        ]
-      ]
+      "pr_auc": 0.7187,
+      "cv_roc_auc_mean": 0.8269,
+      "cv_roc_auc_std": 0.0292,
+      "cv_accuracy_mean": 0.7643,
+      "cv_accuracy_std": 0.0248
     },
     {
       "model": "K-Nearest Neighbors",
@@ -63,18 +51,32 @@
       "recall": 0.5,
       "f1": 0.5567,
       "roc_auc": 0.7616,
-      "confusion_matrix": [
-        [
-          84,
-          16
-        ],
-        [
-          27,
-          27
-        ]
-      ]
+      "pr_auc": 0.567,
+      "cv_roc_auc_mean": 0.7472,
+      "cv_roc_auc_std": 0.0256,
+      "cv_accuracy_mean": 0.6992,
+      "cv_accuracy_std": 0.0185
     }
   ],
+  "tuned_test_metrics": {
+    "model": "Logistic Regression (tuned)",
+    "accuracy": 0.7338,
+    "precision": 0.6032,
+    "recall": 0.7037,
+    "f1": 0.6496,
+    "roc_auc": 0.8124,
+    "pr_auc": 0.6723
+  },
+  "feature_importances": {
+    "Glucose": 1.1697,
+    "BloodPressure": 0.1056,
+    "SkinThickness": 0.0308,
+    "Insulin": 0.0873,
+    "BMI": 0.6687,
+    "Pregnancies": 0.1257,
+    "DiabetesPedigreeFunction": 0.9699,
+    "Age": 0.016
+  },
   "feature_names": [
     "Pregnancies",
     "Glucose",
